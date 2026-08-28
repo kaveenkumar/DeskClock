@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Seven-segment "12:34" on the adaptive-icon 108dp grid (safe zone is the centre 66dp).
+     Digits span x 26..80, y 42..66; the colon gets the accent blue. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 1 -->
+    <path
+        android:pathData="M35,42 L35,66"
+        android:strokeColor="#E8ECF7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <!-- 2 -->
+    <path
+        android:pathData="M39,42 L48,42 L48,54 L39,54 L39,66 L48,66"
+        android:strokeColor="#E8ECF7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+    <!-- colon -->
+    <path
+        android:pathData="M53,48 m-2.2,0 a2.2,2.2 0 1,1 4.4,0 a2.2,2.2 0 1,1 -4.4,0"
+        android:fillColor="#8FB7F3" />
+    <path
+        android:pathData="M53,60 m-2.2,0 a2.2,2.2 0 1,1 4.4,0 a2.2,2.2 0 1,1 -4.4,0"
+        android:fillColor="#8FB7F3" />
+    <!-- 3 -->
+    <path
+        android:pathData="M58,42 L67,42 L67,66 L58,66 M58,54 L67,54"
+        android:strokeColor="#E8ECF7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+    <!-- 4 -->
+    <path
+        android:pathData="M71,42 L71,54 L80,54 M80,42 L80,66"
+        android:strokeColor="#E8ECF7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>

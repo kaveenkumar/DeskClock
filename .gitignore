@@ -1,0 +1,12 @@
+.gradle/
+build/
+local.properties
+.kotlin/
+
+# Binaries: releases are distributed via GitHub Releases, not the repo.
+*.apk
+
+# Signing material — never committed.
+*.keystore
+*.jks
+keystore.properties
