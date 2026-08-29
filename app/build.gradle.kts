@@ -10,7 +10,7 @@ plugins {
  * dropped in the repo root (same convention as ChargeMeter). `versionCode` increments on every
  * CHANGELOG.md entry and must never be reused.
  */
-val appVersionName = "0.7.1"
+val appVersionName = "0.8.0"
 
 android {
     namespace = "com.deskclock.app"
@@ -20,7 +20,7 @@ android {
         applicationId = "com.deskclock.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
+        versionCode = 9
         versionName = appVersionName
     }
 

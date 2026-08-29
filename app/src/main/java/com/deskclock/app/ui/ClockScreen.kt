@@ -29,15 +29,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -212,26 +210,40 @@ private fun ClockContent(
             ),
         )
 
-        // Maximise the font: measure a digit template at a reference size, then scale so the text
+        // Maximise the font: measure the ACTUAL time string at a reference size, then scale so it
         // fills the width (or the height budget that leaves room for the info row and the burn-in
-        // drift). Digits are templated to '0' so the size doesn't wobble as the minutes tick over.
-        // The width budget leaves room for the seconds/AM-PM column beside the time.
+        // drift). Proportional fonts render narrow digits ('1', '7') much slimmer than a '0'
+        // template would suggest, so sizing from the real string is what lets them fill the
+        // screen; the size change when digits roll over is animated below. Width is the sum of
+        // the hour/colon/minute parts (they are separate texts), plus the seconds/AM-PM column.
         val textMeasurer = rememberTextMeasurer()
         val density = LocalDensity.current
-        val template = timeText.map { if (it.isDigit()) '0' else it }.joinToString("")
-        val timeSize = remember(template, maxWidth, maxHeight, use24h, font) {
-            val layout = textMeasurer.measure(template, timeStyle.copy(fontSize = 100.sp))
-            val widthBudget = with(density) { maxWidth.toPx() } * (if (use24h) 0.86f else 0.80f)
-            val heightBudget = with(density) { maxHeight.toPx() } * 0.72f
-            (100f * min(widthBudget / layout.size.width, heightBudget / layout.size.height)).sp
+        val hourText = timeText.substringBefore(':')
+        val minuteText = timeText.substringAfter(':')
+        val timeSize = remember(timeText, maxWidth, maxHeight, use24h, font) {
+            val base = timeStyle.copy(fontSize = 100.sp)
+            val timeWidth = listOf(hourText, ":", minuteText)
+                .sumOf { textMeasurer.measure(it, base).size.width }
+                .toFloat()
+            val timeHeight = textMeasurer.measure(timeText, base).size.height.toFloat()
+            val secondsWidth = textMeasurer.measure("00", base).size.width * 0.17f
+            val ampmWidth =
+                if (use24h) 0f else textMeasurer.measure("AM", base).size.width * 0.15f
+            val sideWidth = maxOf(secondsWidth, ampmWidth)
+            val paddingPx = with(density) { 10.dp.toPx() }
+            val widthScale =
+                (with(density) { maxWidth.toPx() } * 0.94f - paddingPx) / (timeWidth + sideWidth)
+            val heightScale = with(density) { maxHeight.toPx() } * 0.74f / timeHeight
+            (100f * min(widthScale, heightScale))
         }
-        val infoSize = (timeSize.value * 0.135f).coerceIn(16f, 38f).sp
-        val secondsSize = (timeSize.value * 0.17f).sp
+        val animatedTimeSize by animateFloatAsState(timeSize, tween(500), label = "timeSize")
+        val infoSize = (animatedTimeSize * 0.135f).coerceIn(16f, 38f).sp
+        val secondsSize = (animatedTimeSize * 0.17f).sp
         val iconHeight: Dp = with(density) { (infoSize.value * 0.85f).dp }
 
-        // The colon dims rather than disappearing, so the rhythm reads without strobing, and it's
-        // styled as a span to keep the layout width constant. EVERY_SECOND rides the per-second
-        // recomposition: each new `time` restarts the effect, which dips the colon mid-second.
+        // The colon dims rather than disappearing, so the rhythm reads without strobing.
+        // EVERY_SECOND rides the per-second recomposition: each new `time` restarts the effect,
+        // which dips the colon mid-second.
         var colonDim by remember { mutableStateOf(false) }
         LaunchedEffect(time, blink) {
             when (blink) {
@@ -244,29 +256,30 @@ private fun ClockContent(
                 }
             }
         }
-        val colonAlpha = if (colonDim) 0.25f else 1f
-        val blinkingTime = buildAnnotatedString {
-            timeText.forEach { ch ->
-                if (ch == ':') {
-                    withStyle(SpanStyle(color = textColor.copy(alpha = colonAlpha))) { append(ch) }
-                } else {
-                    append(ch)
-                }
-            }
-        }
+        // Separator stays as subtle as the seconds counter (0.7), dipping to 0.3 — a bright
+        // full-alpha blink right at the centre of vision was distracting.
+        val colonAlpha = if (colonDim) 0.3f else 0.7f
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.Bottom) {
+                // Hour, colon, and minutes are separate texts so the blink can be a pure
+                // graphics-layer alpha. Blinking via a color span inside one string splits the
+                // shaping runs only in the dimmed state, which drops digit:colon kerning and made
+                // the colon jump sideways in kerned fonts (Poiret One after a 7).
+                val bigStyle = timeStyle.copy(fontSize = animatedTimeSize.sp)
+                Text(text = hourText, color = textColor, style = bigStyle)
                 Text(
-                    text = blinkingTime,
+                    text = ":",
                     color = textColor,
-                    style = timeStyle.copy(fontSize = timeSize),
+                    style = bigStyle,
+                    modifier = Modifier.alpha(colonAlpha),
                 )
+                Text(text = minuteText, color = textColor, style = bigStyle)
                 Column(
                     horizontalAlignment = Alignment.Start,
                     modifier = Modifier.padding(
                         start = 10.dp,
-                        bottom = with(density) { (timeSize.value * 0.05f).dp },
+                        bottom = with(density) { (animatedTimeSize * 0.05f).dp },
                     ),
                 ) {
                     if (!use24h) {
