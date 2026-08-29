@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.0 (2026-08-28) — versionCode 9
+
+- The clock is now sized from the ACTUAL time string instead of an all-zeros template, so
+  proportional fonts with narrow digits (1, 7) fill the screen; size changes on digit rollover
+  animate smoothly.
+- 14 more fonts (27 total): Anton, Fjalla One, Unica One, Righteous, Bungee, Michroma, Zen Dots,
+  Aldrich, Quantico, Chakra Petch, Iceland, Wallpoet, Major Mono Display, DM Serif Display.
+- Fixed the separator jumping sideways when blinking in kerned fonts (Poiret One after a 7): the
+  colon is now its own text blinked via a pure alpha layer, instead of a color span that split the
+  text shaping runs only in the dimmed state.
+- Separator toned down to the seconds counter's subtlety: 70% alpha steady, dipping to 30% —
+  a full-brightness blink at the centre of vision was distracting.
+
 ## 0.7.1 (2026-08-28) — versionCode 8
 
 - "Weather effects" switch in settings to turn the rain/snow/stars/thunder animations on or off
