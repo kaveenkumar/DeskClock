@@ -16,6 +16,13 @@ data class WeatherState(
     /** Today's sun times in the location's own timezone (`timezone=auto` in the request). */
     val sunrise: LocalDateTime,
     val sunset: LocalDateTime,
+    val humidity: Int,
+    val windKmh: Double,
+    val uvIndexMax: Double,
+    /** Today's maximum precipitation probability in percent; null when the model omits it. */
+    val precipProbabilityMax: Int?,
+    /** European AQI from the separate air-quality endpoint; null when that call fails. */
+    val aqi: Int?,
 )
 
 data class Place(
@@ -31,23 +38,38 @@ data class Place(
 
 /**
  * Open-Meteo: keyless and free for non-commercial use, which keeps the app free of secrets and
- * accounts. Weather and geocoding are separate endpoints of the same service.
+ * accounts. Weather, air quality, and geocoding are separate endpoints of the same service.
  */
 class WeatherRepository {
 
     suspend fun fetch(latitude: Double, longitude: Double): WeatherState = withContext(Dispatchers.IO) {
         val url = "https://api.open-meteo.com/v1/forecast" +
             "?latitude=$latitude&longitude=$longitude" +
-            "&current=temperature_2m,weather_code" +
-            "&daily=sunrise,sunset&forecast_days=1&timezone=auto"
+            "&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m" +
+            "&daily=sunrise,sunset,uv_index_max,precipitation_probability_max" +
+            "&forecast_days=1&timezone=auto"
         val json = JSONObject(httpGet(url))
         val current = json.getJSONObject("current")
         val daily = json.getJSONObject("daily")
+
+        // Air quality is a different host; its failure must not take the weather down with it.
+        val aqi = runCatching {
+            val aqiUrl = "https://air-quality-api.open-meteo.com/v1/air-quality" +
+                "?latitude=$latitude&longitude=$longitude&current=european_aqi"
+            JSONObject(httpGet(aqiUrl)).getJSONObject("current").getInt("european_aqi")
+        }.getOrNull()
+
         WeatherState(
             temperatureC = current.getDouble("temperature_2m"),
             kind = kindOf(current.getInt("weather_code")),
             sunrise = LocalDateTime.parse(daily.getJSONArray("sunrise").getString(0)),
             sunset = LocalDateTime.parse(daily.getJSONArray("sunset").getString(0)),
+            humidity = current.optInt("relative_humidity_2m", 0),
+            windKmh = current.optDouble("wind_speed_10m", 0.0),
+            uvIndexMax = daily.optJSONArray("uv_index_max")?.optDouble(0, 0.0) ?: 0.0,
+            precipProbabilityMax = daily.optJSONArray("precipitation_probability_max")
+                ?.takeIf { !it.isNull(0) }?.optInt(0),
+            aqi = aqi,
         )
     }
 

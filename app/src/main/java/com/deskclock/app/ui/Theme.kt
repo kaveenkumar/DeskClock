@@ -50,6 +50,21 @@ fun backgroundBrush(kind: WeatherKind?, isNight: Boolean, background: Background
     return Brush.verticalGradient(listOf(top, bottom))
 }
 
+private val MOON_EMOJI =
+    listOf("🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘")
+
+/**
+ * Moon phase from the mean synodic month (29.5306 days) anchored at the 2000-01-06 18:14 UTC new
+ * moon. Accurate to better than a day, which is all an emoji can express anyway.
+ */
+fun moonPhaseEmoji(date: java.time.LocalDate): String {
+    val anchor = java.time.LocalDateTime.of(2000, 1, 6, 18, 14)
+    val days = java.time.temporal.ChronoUnit.HOURS.between(anchor, date.atTime(12, 0)) / 24.0
+    val synodic = 29.530588853
+    val phase = (((days % synodic) + synodic) % synodic) / synodic
+    return MOON_EMOJI[(phase * 8).toInt().coerceIn(0, 7)]
+}
+
 fun weatherEmoji(kind: WeatherKind, isNight: Boolean): String = when (kind) {
     WeatherKind.CLEAR -> if (isNight) "🌙" else "☀️"
     WeatherKind.PARTLY -> if (isNight) "☁️" else "⛅"

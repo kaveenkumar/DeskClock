@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -233,7 +234,9 @@ private fun ClockContent(
             val paddingPx = with(density) { 10.dp.toPx() }
             val widthScale =
                 (with(density) { maxWidth.toPx() } * 0.94f - paddingPx) / (timeWidth + sideWidth)
-            val heightScale = with(density) { maxHeight.toPx() } * 0.74f / timeHeight
+            // 0.62: the info row above and the conditions strip below both need their slice; the
+            // column layout guarantees no overlap, this keeps the slack spacers from vanishing.
+            val heightScale = with(density) { maxHeight.toPx() } * 0.62f / timeHeight
             (100f * min(widthScale, heightScale))
         }
         val animatedTimeSize by animateFloatAsState(timeSize, tween(500), label = "timeSize")
@@ -260,7 +263,59 @@ private fun ClockContent(
         // full-alpha blink right at the centre of vision was distracting.
         val colonAlpha = if (colonDim) 0.3f else 0.7f
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // One column for everything: the weighted spacers centre the clock group while the
+        // conditions strip keeps the bottom edge — no overlays, so nothing can collide however
+        // large the fonts or however many lines the strips wrap to.
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Spacer(Modifier.weight(1f))
+            // FlowRow rather than Row: in portrait the full date plus weather plus battery can be
+            // wider than the screen — wrapping beats clipping at the edges.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                itemVerticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            ) {
+                val secondary = textColor.copy(alpha = 0.85f)
+
+                Text(
+                    text = time.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),
+                    color = secondary,
+                    fontSize = infoSize,
+                )
+
+                Text("·", color = secondary, fontSize = infoSize)
+
+                when {
+                    weather != null -> Text(
+                        text = "${weatherEmoji(weather.kind, isNight)} ${weather.temperatureC.roundToInt()}°",
+                        color = secondary,
+                        fontSize = infoSize,
+                    )
+                    hasLocation -> Text("…", color = secondary, fontSize = infoSize)
+                    else -> Text("long-press for settings", color = secondary, fontSize = infoSize)
+                }
+
+                Text("·", color = secondary, fontSize = infoSize)
+
+                // Icon and percentage stay glued together across wraps.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    BatteryIcon(
+                        percent = batteryPercent,
+                        charging = batteryCharging,
+                        plugged = batteryPlugged,
+                        color = secondary,
+                        modifier = Modifier.size(width = iconHeight * 1.9f, height = iconHeight),
+                    )
+                    Text("$batteryPercent%", color = secondary, fontSize = infoSize)
+                }
+            }
+
             Row(verticalAlignment = Alignment.Bottom) {
                 // Hour, colon, and minutes are separate texts so the blink can be a pure
                 // graphics-layer alpha. Blinking via a color span inside one string splits the
@@ -301,48 +356,30 @@ private fun ClockContent(
                 }
             }
 
-            // FlowRow rather than Row: in portrait the full date plus weather plus battery can be
-            // wider than the screen, and clipping at the edges beats nothing — wrapping beats both.
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                itemVerticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 12.dp),
-            ) {
-                val secondary = textColor.copy(alpha = 0.85f)
 
-                Text(
-                    text = time.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")),
-                    color = secondary,
-                    fontSize = infoSize,
-                )
+            Spacer(Modifier.weight(1f))
 
-                Text("·", color = secondary, fontSize = infoSize)
-
-                when {
-                    weather != null -> Text(
-                        text = "${weatherEmoji(weather.kind, isNight)} ${weather.temperatureC.roundToInt()}°",
-                        color = secondary,
-                        fontSize = infoSize,
-                    )
-                    hasLocation -> Text("…", color = secondary, fontSize = infoSize)
-                    else -> Text("long-press for settings", color = secondary, fontSize = infoSize)
-                }
-
-                Text("·", color = secondary, fontSize = infoSize)
-
-                // Icon and percentage stay glued together across wraps.
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+            // Extended conditions strip along the bottom edge: sun times, precipitation chance,
+            // UV, air quality, moon phase, humidity, wind. Wraps to more lines in portrait.
+            if (weather != null) {
+                val tertiary = textColor.copy(alpha = 0.7f)
+                val bottomSize = (infoSize.value * 0.8f).sp
+                val sunFormat = DateTimeFormatter.ofPattern(if (use24h) "HH:mm" else "h:mm")
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 14.dp),
                 ) {
-                    BatteryIcon(
-                        percent = batteryPercent,
-                        charging = batteryCharging,
-                        plugged = batteryPlugged,
-                        color = secondary,
-                        modifier = Modifier.size(width = iconHeight * 1.9f, height = iconHeight),
-                    )
-                    Text("$batteryPercent%", color = secondary, fontSize = infoSize)
+                    Text("🌅 ${weather.sunrise.format(sunFormat)}", color = tertiary, fontSize = bottomSize)
+                    Text("🌇 ${weather.sunset.format(sunFormat)}", color = tertiary, fontSize = bottomSize)
+                    weather.precipProbabilityMax?.let {
+                        Text("☔ $it%", color = tertiary, fontSize = bottomSize)
+                    }
+                    Text("UV ${weather.uvIndexMax.roundToInt()}", color = tertiary, fontSize = bottomSize)
+                    weather.aqi?.let { Text("AQI $it", color = tertiary, fontSize = bottomSize) }
+                    Text("💧 ${weather.humidity}%", color = tertiary, fontSize = bottomSize)
+                    Text("💨 ${weather.windKmh.roundToInt()} km/h", color = tertiary, fontSize = bottomSize)
+                    Text(moonPhaseEmoji(time.toLocalDate()), color = tertiary, fontSize = bottomSize)
                 }
             }
         }
