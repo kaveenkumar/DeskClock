@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.0 (2026-08-30) — versionCode 10
+
+- The date/weather/battery row moved above the clock; a new conditions strip sits along the bottom
+  edge: sunrise, sunset, precipitation probability, UV index, air quality (European AQI from
+  Open-Meteo's air-quality endpoint), moon phase (computed locally), humidity, and wind.
+- The screen is now one vertical column with weighted spacers, so no element can overlap another
+  regardless of font or wrapping; time height budget adjusted for the two strips.
+
 ## 0.8.0 (2026-08-28) — versionCode 9
 
 - The clock is now sized from the ACTUAL time string instead of an all-zeros template, so
