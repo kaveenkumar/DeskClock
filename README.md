@@ -1,7 +1,7 @@
 # DeskClock
 
 Always-on desk clock for a permanently-docked, permanently-charging phone (a Pixel 4 on a stand).
-Big time, small info row: date · weather · battery.
+Date, weather and battery on top, big time in the middle, today's conditions along the bottom.
 
 ![Clock, landscape](screenshots/clock-landscape.png)
 
@@ -12,12 +12,15 @@ Big time, small info row: date · weather · battery.
 - 27 selectable clock fonts (system Roboto plus 26 bundled OFL faces from Google Fonts), with live
   previews in settings. The clock is sized from the actual time string, so every font fills the
   screen edge to edge.
-- Info row: full date and day, current weather (temperature + condition), battery icon with
-  percentage. The bolt shows whenever power is connected — solid while charging, faint while a
-  charge limiter is holding the level.
-- Weather from [Open-Meteo](https://open-meteo.com) — keyless and free for non-commercial use.
-  Location is a city picked once in settings, so the app needs no location permission; `INTERNET`
-  is its only permission.
+- Info row above the clock: full date and day, current weather (temperature + condition), battery
+  icon with percentage. The bolt shows whenever power is connected — solid while charging, faint
+  while a charge limiter is holding the level.
+- Conditions strip along the bottom: sunrise and sunset, today's precipitation probability, max UV
+  index, air quality (European AQI), humidity, wind, and the current moon phase (computed locally,
+  no network).
+- Weather and air quality from [Open-Meteo](https://open-meteo.com) — keyless and free for
+  non-commercial use. Location is a city picked once in settings, so the app needs no location
+  permission; `INTERNET` is its only permission.
 - Day/night theme switched by the location's real sunrise/sunset (from the same weather response),
   with a 07:00/19:00 fallback when offline.
 - Dimming modes: Off, Schedule (user-set window, default 22:00–06:00), or Sunset (sunset→sunrise).
