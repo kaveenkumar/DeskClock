@@ -1,6 +1,6 @@
 # DeskClock
 
-Always-on desk clock for a permanently-docked, permanently-charging phone (a Pixel 4 on a stand).
+Always-on desk clock for a permanently-docked, permanently-charging phone on a stand.
 Date, weather and battery on top, big time in the middle, today's conditions along the bottom.
 
 ![Clock, landscape](screenshots/clock-landscape.png)
